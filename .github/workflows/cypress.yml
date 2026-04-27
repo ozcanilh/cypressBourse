@@ -10,14 +10,20 @@ on:
   workflow_dispatch: # Allow manual triggering
 
 jobs:
-  # Job 1: Run tests in 3 parallel containers
+  # Job 1: Run specs in 3 parallel GitHub jobs (without Cypress Cloud)
   cypress-tests:
     name: Run Cypress Tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false # Continue other containers even if one fails
       matrix:
-        containers: [1, 2, 3] # Create 3 parallel containers
+        include:
+          - job_name: ui
+            spec: cypress/e2e/tests/0_inventory/inventory.cy.js
+          - job_name: network
+            spec: cypress/e2e/tests/1_network/network-interception.cy.js
+          - job_name: api
+            spec: cypress/e2e/tests/2_api/api-test.cy.js
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,9 +44,7 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           browser: chrome # Use Chrome browser
-          parallel: true # Enable parallel execution
-          group: 'Parallel Tests' # Group name in Cypress Dashboard
-          record: false # Don't record to Cypress Dashboard (requires CYPRESS_RECORD_KEY)
+          spec: ${{ matrix.spec }} # Split specs across GitHub matrix jobs
         env:
           # Get ReqRes API key from GitHub secrets (for API tests)
           CYPRESS_reqresApiKey: ${{ secrets.REQRES_API_KEY }}
@@ -50,7 +54,7 @@ jobs:
         if: always() # Run even if tests fail
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-json-report-${{ matrix.containers }} # Unique name per container
+          name: cypress-json-report-${{ matrix.job_name }} # Unique name per spec job
           path: cypress/reports/.jsons/*.json
           retention-days: 2 # Keep for 2 days
 
@@ -59,7 +63,7 @@ jobs:
         if: failure() # Only run if tests fail
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-screenshots-${{ matrix.containers }}
+          name: cypress-screenshots-${{ matrix.job_name }}
           path: cypress/reports/screenshots/
           retention-days: 2
           if-no-files-found: ignore # Don't error if no screenshots exist
