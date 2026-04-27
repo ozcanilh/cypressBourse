@@ -10,20 +10,14 @@ on:
   workflow_dispatch: # Allow manual triggering
 
 jobs:
-  # Job 1: Run specs in 3 parallel GitHub jobs (without Cypress Cloud)
+  # Job 1: Run tests in 3 parallel GitHub jobs using Cypress Cloud
   cypress-tests:
     name: Run Cypress Tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false # Continue other containers even if one fails
       matrix:
-        include:
-          - job_name: ui
-            spec: cypress/e2e/tests/0_inventory/inventory.cy.js
-          - job_name: network
-            spec: cypress/e2e/tests/1_network/network-interception.cy.js
-          - job_name: api
-            spec: cypress/e2e/tests/2_api/api-test.cy.js
+        containers: [1, 2, 3] # 3 Cloud-parallel machines
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,8 +38,12 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           browser: chrome # Use Chrome browser
-          spec: ${{ matrix.spec }} # Split specs across GitHub matrix jobs
+          record: true # Record run to Cypress Cloud
+          parallel: true # Enable Cypress Cloud parallelization
+          group: Parallel Tests # Group name visible in Cypress Cloud
         env:
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          CYPRESS_PROJECT_ID: ${{ secrets.CYPRESS_PROJECT_ID }}
           # Get ReqRes API key from GitHub secrets (for API tests)
           CYPRESS_reqresApiKey: ${{ secrets.REQRES_API_KEY }}
 
@@ -54,7 +52,7 @@ jobs:
         if: always() # Run even if tests fail
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-json-report-${{ matrix.job_name }} # Unique name per spec job
+          name: cypress-json-report-${{ matrix.containers }} # Unique name per container
           path: cypress/reports/.jsons/*.json
           retention-days: 2 # Keep for 2 days
 
@@ -63,7 +61,7 @@ jobs:
         if: failure() # Only run if tests fail
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-screenshots-${{ matrix.job_name }}
+          name: cypress-screenshots-${{ matrix.containers }}
           path: cypress/reports/screenshots/
           retention-days: 2
           if-no-files-found: ignore # Don't error if no screenshots exist

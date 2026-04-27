@@ -128,6 +128,8 @@ Reports: `https://<username>.github.io/<repo>/index_<run_number>.html`
 
 Set GitHub secrets:
 
+- `CYPRESS_RECORD_KEY` - Cypress Cloud record key
+- `CYPRESS_PROJECT_ID` - Cypress Cloud project ID used for recorded runs
 - `SLACK_WEBHOOK_URL` - Slack incoming webhook URL
 
 The Slack message includes:
@@ -142,7 +144,7 @@ The Slack message includes:
 
 GitHub Actions workflow (`.github/workflows/cypress.yml`):
 
-1. **`cypress-tests` job** - Runs in 3 parallel containers using matrix strategy
+1. **`cypress-tests` job** - Runs in 3 parallel containers using Cypress Cloud parallelization
 2. **`merge-reports` job** - Merges JSON reports, generates HTML, deploys to GitHub Pages, sends Slack notification
 
 Triggered on:

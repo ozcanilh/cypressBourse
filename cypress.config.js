@@ -2,6 +2,9 @@ const { defineConfig } = require('cypress');
 const { beforeRunHook, afterRunHook } = require('cypress-mochawesome-reporter/lib');
 
 module.exports = defineConfig({
+  // Cypress Cloud project identifier (can be injected via CI secret/env)
+  projectId: process.env.CYPRESS_PROJECT_ID,
+
   // Retry configuration - reduces flakiness in CI
   retries: {
     runMode: 2, // Retry failed tests 2 times in CI (cypress run)
