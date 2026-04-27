@@ -3,3 +3,5 @@ cypress/reports/
 cypress/screenshots/
 cypress/videos/
 .env
+cypress.env.json
+.idea/

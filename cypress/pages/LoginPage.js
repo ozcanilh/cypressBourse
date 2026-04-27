@@ -1,24 +1,22 @@
 class LoginPage {
-  get usernameInput() {
-    return cy.get('[data-test="username"]');
+  constructor() {
+    this.elements = {
+      usernameInput: '[data-test="username"]',
+      passwordInput: '[data-test="password"]',
+      loginButton: '[data-test="login-button"]',
+    };
   }
 
-  get passwordInput() {
-    return cy.get('[data-test="password"]');
+  getUsernameInput() {
+    return this.elements.usernameInput;
   }
 
-  get loginButton() {
-    return cy.get('[data-test="login-button"]');
+  getPasswordInput() {
+    return this.elements.passwordInput;
   }
 
-  visit() {
-    cy.visit("/");
-  }
-
-  login(username, password) {
-    this.usernameInput.type(username);
-    this.passwordInput.type(password);
-    this.loginButton.click();
+  getLoginButton() {
+    return this.elements.loginButton;
   }
 }
 

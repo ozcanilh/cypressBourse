@@ -1,0 +1,136 @@
+name: Cypress Tests
+
+on:
+  push:
+    branches: [main] # Run on push to main branch
+  pull_request:
+    branches: [main] # Run on PR to main branch
+  schedule:
+    - cron: '0 0 * * *' # Run every night at 00:00 UTC
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  # Job 1: Run tests in 3 parallel containers
+  cypress-tests:
+    name: Run Cypress Tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # Continue other containers even if one fails
+      matrix:
+        containers: [1, 2, 3] # Create 3 parallel containers
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Setup Node.js with npm cache for faster installs
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm # Cache based on package-lock.json
+
+      # Install dependencies (npm ci = clean install, faster for CI)
+      - name: Install dependencies
+        run: npm ci
+
+      # Run Cypress tests
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          browser: chrome # Use Chrome browser
+          parallel: true # Enable parallel execution
+          group: 'Parallel Tests' # Group name in Cypress Dashboard
+          record: false # Don't record to Cypress Dashboard (requires CYPRESS_RECORD_KEY)
+        env:
+          # Get ReqRes API key from GitHub secrets (for API tests)
+          CYPRESS_reqresApiKey: ${{ secrets.REQRES_API_KEY }}
+
+      # Upload JSON report from each container as artifact
+      - name: Upload JSON Report
+        if: always() # Run even if tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-json-report-${{ matrix.containers }} # Unique name per container
+          path: cypress/reports/.jsons/*.json
+          retention-days: 2 # Keep for 2 days
+
+      # Upload screenshots if tests fail
+      - name: Upload screenshots on failure
+        if: failure() # Only run if tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots-${{ matrix.containers }}
+          path: cypress/reports/screenshots/
+          retention-days: 2
+          if-no-files-found: ignore # Don't error if no screenshots exist
+
+  # Job 2: Merge reports from all containers
+  merge-reports:
+    name: Merge Cypress Reports
+    runs-on: ubuntu-latest
+    needs: cypress-tests # Run after cypress-tests job completes
+    if: always() # Run even if cypress-tests fails (to generate report)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Download JSON reports from all containers
+      - name: Download JSON Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: reports/json # Download to reports/json/ folder
+          pattern: cypress-json-report-* # All artifacts starting with cypress-json-report-
+
+      # Merge all JSON reports into single file
+      - name: Merge JSON Reports
+        run: |
+          mkdir -p cypress/reports/merged
+          # mochawesome-merge: Combine all JSON files
+          npx mochawesome-merge reports/json/**/*.json > cypress/reports/merged/merged-report.json
+
+      # Generate HTML report from merged JSON
+      - name: Generate HTML Report
+        run: |
+          mkdir -p cypress/html
+          # marge: Generate HTML report from JSON
+          # --reportFilename: index_<run_number>.html (e.g., index_42.html)
+          # --inline: Embed CSS/JS in HTML (single file)
+          npx marge cypress/reports/merged/merged-report.json --reportDir cypress/html --reportFilename index_${{ github.run_number }}.html --inline
+
+      # Deploy HTML report to GitHub Pages
+      - name: Deploy Report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }} # Auto-provided token
+          publish_dir: cypress/html # Publish this directory
+          keep_files: true # Don't delete old reports (keep history)
+
+      # Also save report as artifact (in addition to GitHub Pages)
+      - name: Upload Merged Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-merged-report
+          path: cypress/reports/
+          retention-days: 7
+
+      # Send test results to Slack
+      - name: Send to Slack
+        if: always()
+        run: node ./scripts/send_slack_message.js
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}

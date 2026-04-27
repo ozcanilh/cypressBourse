@@ -1,17 +1,28 @@
 {
   "name": "cypressbourse",
   "version": "1.0.0",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "cy:open": "cypress open",
+    "cy:run": "cypress run --browser chrome",
+    "cy:run:electron": "cypress run --browser electron",
+    "cy:run:firefox": "cypress run --browser firefox",
+    "cy:run:chrome": "cypress run --browser chrome",
+    "cy:run:spec": "cypress run --browser chrome --spec",
+    "cy:run:spec:electron": "cypress run --browser electron --spec",
+    "cy:run:spec:firefox": "cypress run --browser firefox --spec",
+    "cy:run:spec:chrome": "cypress run --browser chrome --spec",
+    "clean:reports": "rm -rf cypress/reports",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "lint-staged": {
+    "*.{js,json,md,yml,yaml}": "prettier --write"
+  },
   "devDependencies": {
+    "axios": "^1.15.2",
     "cypress": "^15.14.1",
-    "cypress-slack-notify": "^1.14.11",
+    "cypress-mochawesome-reporter": "^4.0.2",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "mochawesome": "^7.1.4",

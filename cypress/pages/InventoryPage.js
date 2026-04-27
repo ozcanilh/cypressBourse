@@ -1,25 +1,22 @@
 class InventoryPage {
-  get inventoryItems() {
-    return cy.get('[data-test="inventory-item"]');
+  constructor() {
+    this.elements = {
+      inventoryItem: '[data-test="inventory-item"]',
+      cartBadge: '[data-test="shopping-cart-badge"]',
+      addToCartButton: "button[data-test^='add-to-cart']",
+    };
   }
 
-  get cartBadge() {
-    return cy.get('[data-test="shopping-cart-badge"]');
+  getInventoryItems() {
+    return this.elements.inventoryItem;
   }
 
-  get cartLink() {
-    return cy.get('[data-test="shopping-cart-link"]');
+  getCartBadge() {
+    return this.elements.cartBadge;
   }
 
-  addFirstProductToCart() {
-    cy.get('[data-test="inventory-item"]')
-      .first()
-      .find("button[data-test^='add-to-cart']")
-      .click();
-  }
-
-  verifyCartBadge(count) {
-    this.cartBadge.should("have.text", String(count));
+  getAddToCartButton() {
+    return this.elements.addToCartButton;
   }
 }
 
