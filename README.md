@@ -14,13 +14,6 @@ npm run cy:run:chrome             # Run all tests in Chrome
 npm run clean:reports             # Clean reports
 ```
 
-## CI / Nightly Schedule
-
-- The GitHub Actions workflow also runs automatically every night.
-- Cron schedule: `0 0 * * *`
-- Time: **00:00 UTC** every day
-- Workflow file: [`.github/workflows/cypress.yml`](./.github/workflows/cypress.yml)
-
 ## Run A Single Test (Spec)
 
 ```bash
@@ -152,7 +145,6 @@ Triggered on:
 - Push to `main` branch
 - Pull request to `main` branch
 - Manual trigger via `workflow_dispatch`
-- Nightly schedule via cron `0 0 * * *` (00:00 UTC)
 
 ## Features
 
@@ -220,7 +212,7 @@ Triggered on:
 - Add Chrome flags: `--disable-dev-shm-usage`, `--no-sandbox`
 - Run tests on clean state (clear cookies/localStorage in `beforeEach`)
 
-### 3. What test strategy would you run on every Pull Request vs nightly runs?
+### 3. What test strategy would you run on every Pull Request?
 
 **Pull Request (Fast Feedback ~5-10 min):**
 
@@ -231,17 +223,7 @@ Triggered on:
 - **Fail fast:** Stop on first failure
 - **Skip:** Visual regression, performance tests, full regression
 
-**Nightly Runs (Full Coverage):**
-
-- **All regression tests** (`@regression` tag)
-- **Multi-browser:** Chrome, Firefox, Edge (matrix)
-- **Parallel:** 10+ containers
-- **Environments:** Test against staging + production
-- **Full reports:** Deploy to GitHub Pages with historical trends
-- **Slack:** Detailed summary with failure breakdown and PR links
-
 **Benefits:**
 
 - PR runs give **instant feedback** without blocking developers
-- Nightly runs catch **integration issues** and **environment-specific bugs**
 - Cost-effective CI usage (don't run 300 tests on every commit)
